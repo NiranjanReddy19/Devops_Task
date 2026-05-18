@@ -1,56 +1,95 @@
 pipeline {
-  agent any
+    agent any
 
-  parameters {
-    choice(name: 'ENV', choices: ['dev', 'staging', 'prod'], description: 'Target deployment environment')
-    booleanParam(name: 'APPLY', defaultValue: false, description: 'Run terraform apply')
-  }
-
-  environment {
-    TF_IN_AUTOMATION = 'true'
-  }
-
-  stages {
-    stage('Checkout') {
-      steps {
-        checkout scm
-      }
+    environment {
+        TF_IN_AUTOMATION = "true"
     }
 
-    stage('Init') {
-      steps {
-        dir("environments/${params.ENV}") {
-          sh 'terraform init -input=false'
+    stages {
+
+        stage('Set Environment') {
+
+            steps {
+
+                script {
+
+                    if (env.BRANCH_NAME == "dev") {
+                        ENV_DIR = "environments/dev"
+                    }
+
+                    else if (env.BRANCH_NAME == "main") {
+                        ENV_DIR = "environments/prod"
+                    }
+
+                    else {
+                        error("Unsupported branch")
+                    }
+                }
+            }
         }
-      }
-    }
 
-    stage('Validate') {
-      steps {
-        dir("environments/${params.ENV}") {
-          sh 'terraform fmt -check'
-          sh 'terraform validate'
+        stage('Checkout Code') {
+            steps {
+                git branch: 'dev',
+                url: 'https://github.com/NiranjanReddy19/Devops_Task.git',
+                credentialsId: 'github-credentials'
+            }
         }
-      }
-    }
 
-    stage('Plan') {
-      steps {
-        dir("environments/${params.ENV}") {
-          sh 'terraform plan -out=tfplan -input=false'
+        stage('Terraform Init') {
+            steps {
+                sh """
+                cd ${ENV_DIR}
+                terraform init
+                """
+            }
         }
-      }
-    }
 
-    stage('Apply') {
-      when {
-        expression { return params.APPLY }
-      }
-      steps {
-        dir("environments/${params.ENV}") {
-          sh 'terraform apply -auto-approve tfplan'
+        stage('Terraform Format Check') {
+            steps {
+                sh """
+                cd ${ENV_DIR}
+                terraform fmt -check
+                """
+            }
         }
-      }
+
+        stage('Terraform Validate') {
+            steps {
+                sh """
+                cd ${ENV_DIR}
+                terraform validate
+                """
+            }
+        }
+
+        stage('Terraform Plan') {
+            steps {
+                sh """
+                cd ${ENV_DIR}
+                terraform plan -var-file=terraform.tfvars
+                """
+            }
+        }
+
+        stage('Manual Approval for PROD') {
+
+            when {
+                branch 'main'
+            }
+
+            steps {
+                input "Approve Production Deployment?"
+            }
+        }
+
+        stage('Terraform Apply') {
+            steps {
+                sh """
+                cd ${ENV_DIR}
+                terraform apply -auto-approve -var-file=terraform.tfvars
+                """
+            }
+        }
     }
-  }
 }
