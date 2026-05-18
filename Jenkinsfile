@@ -30,9 +30,9 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
-               git branch: env.BRANCH_NAME,
-               url: 'https://github.com/NiranjanReddy19/Devops_Task.git',
-               credentialsId: 'github-credentials'
+                git branch: 'dev',
+                url: 'https://github.com/NiranjanReddy19/Devops_Task.git',
+                credentialsId: 'github-credentials'
             }
         }
 
