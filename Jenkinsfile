@@ -30,7 +30,7 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
-                checkout scmGit(branches: [[name: '**']], extensions: [], userRemoteConfigs: [[credentialsId: 'github-credentials', url: 'https://github.com/NiranjanReddy19/Devops_Task.git']])
+                checkout scmGit(branches: [[name: '**']], extensions: [], userRemoteConfigs: [[credentialsId: 'Github_credentials', url: 'https://github.com/NiranjanReddy19/Devops_Task.git']])
             }
         }
 
