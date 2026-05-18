@@ -30,45 +30,40 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
-                git branch: 'dev',
-                url: 'https://github.com/NiranjanReddy19/Devops_Task.git',
-                credentialsId: 'github-credentials'
+               git branch: env.BRANCH_NAME,
+               url: 'https://github.com/NiranjanReddy19/Devops_Task.git',
+               credentialsId: 'github-credentials'
             }
         }
 
         stage('Terraform Init') {
             steps {
-                sh """
-                cd ${ENV_DIR}
-                terraform init
-                """
+               dir(env.ENV_DIR) {
+                 sh 'terraform init'
             }
-        }
+         }
+      }
 
         stage('Terraform Format Check') {
             steps {
-                sh """
-                cd ${ENV_DIR}
-                terraform fmt -check
-                """
+               dir(env.ENV_DIR) {
+                 sh 'terraform fmt -check'
             }
         }
 
         stage('Terraform Validate') {
             steps {
-                sh """
-                cd ${ENV_DIR}
-                terraform validate
-                """
+                dir(env.ENV_DIR) {
+                    sh 'terraform validate'
+                }
             }
         }
 
         stage('Terraform Plan') {
             steps {
-                sh """
-                cd ${ENV_DIR}
-                terraform plan -var-file=terraform.tfvars
-                """
+                dir(env.ENV_DIR) {
+                    sh 'terraform plan -var-file=terraform.tfvars'
+                }
             }
         }
 
