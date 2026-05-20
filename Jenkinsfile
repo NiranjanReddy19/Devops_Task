@@ -1,4 +1,5 @@
 pipeline {
+
     agent any
 
     environment {
@@ -7,68 +8,66 @@ pipeline {
 
     stages {
 
+        stage('Checkout') {
+            steps {
+                checkout scmGit(branches: [[name: '**']], extensions: [], userRemoteConfigs: [[credentialsId: 'github-credentials', url: 'https://github.com/NiranjanReddy19/Devops_Task.git']])
+            }
+        }
+
         stage('Set Environment') {
 
             steps {
 
                 script {
 
-                    if (env.BRANCH_NAME == "dev") {
+                    if (env.JOB_NAME == "terraform-dev-pipeline") {
                         ENV_DIR = "environments/dev"
                     }
 
-                    else if (env.BRANCH_NAME == "main") {
+                    else if (env.JOB_NAME == "terraform-prod-pipeline") {
                         ENV_DIR = "environments/prod"
                     }
 
                     else {
-                        error("Unsupported branch")
+                        error("Unknown Job")
                     }
                 }
-            }
-        }
-
-        stage('Checkout Code') {
-            steps {
-                checkout scmGit(branches: [[name: '**']], extensions: [], userRemoteConfigs: [[credentialsId: 'Github_credentials', url: 'https://github.com/NiranjanReddy19/Devops_Task.git']])
             }
         }
 
         stage('Terraform Init') {
             steps {
-               dir(env.ENV_DIR) {
-                 sh 'terraform init'
-            }
-         }
-      }
-
-        stage('Terraform Format Check') {
-            steps {
-               dir(env.ENV_DIR) {
-                 sh 'terraform fmt -check'
+                sh """
+                cd ${ENV_DIR}
+                terraform init
+                """
             }
         }
 
         stage('Terraform Validate') {
             steps {
-                dir(env.ENV_DIR) {
-                    sh 'terraform validate'
-                }
+                sh """
+                cd ${ENV_DIR}
+                terraform validate
+                """
             }
         }
 
         stage('Terraform Plan') {
             steps {
-                dir(env.ENV_DIR) {
-                    sh 'terraform plan -var-file=terraform.tfvars'
-                }
+                sh """
+                cd ${ENV_DIR}
+                terraform plan -var-file=terraform.tfvars
+                """
             }
         }
 
-        stage('Manual Approval for PROD') {
+        stage('Approval For PROD') {
 
             when {
-                branch 'main'
+                expression {
+                    env.JOB_NAME == "terraform-prod-pipeline"
+                }
             }
 
             steps {
@@ -84,6 +83,5 @@ pipeline {
                 """
             }
         }
-     }
     }
 }
